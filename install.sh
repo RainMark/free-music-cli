@@ -1,6 +1,6 @@
 INSTALL_DIR=/usr/bin
 
-if [ "$UID" != "0" ] ; then
+if [ "`/bin/id -u`" != "0" ] ; then
 	echo "Must be root to run this script!"
 	exit 1
 fi
