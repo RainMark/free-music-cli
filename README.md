@@ -27,7 +27,7 @@ $ free-music 				# 第一次运行，会扫描磁盘文件。
 ---
 #### 卸载
 ```
-$ cd free-music && sudo ./uninstall
+$ cd free-music && sudo ./uninstall.sh
 ```
 ---
 #### 联系
