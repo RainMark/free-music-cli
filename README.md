@@ -10,7 +10,7 @@ Free-Music是一个简单、本地化的音乐播放器。当前仅支持 MP3 �
 #### 安装
 ```
 $ git clone https://github.com/RainMark/free-music-cli.git
-$ cd free-music && sudo ./install.sh
+$ cd free-music-cli && sudo ./install.sh
 ```
 ---
 #### 用法
@@ -28,7 +28,7 @@ $ free-music 				# 第一次运行，会扫描磁盘文件。
 ---
 #### 卸载
 ```
-$ cd free-music && sudo ./uninstall.sh
+$ cd free-music-cli && sudo ./uninstall.sh
 ```
 ---
 #### 联系
