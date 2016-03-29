@@ -1,0 +1,215 @@
+#!/bin/bash
+
+# NAME=Free-Music in Terminal
+# VERSION=0.2
+# AUTHOR=Rain
+# EMAIL=rain@linuxstory.org
+
+INSTALL_DIR=~/.free-music-shell
+LISTS=$INSTALL_DIR/lists
+LOCAL_MUSIC="$LISTS/local-music"
+QUIT_CODE=1
+SCAN_DIR=~
+PLAYING_LIST=$LOCAL_MUSIC
+PLAYER=./free-music-player.sh
+TMP_PATH=/tmp/free-music-terminal
+
+show_menu () {
+
+	clear
+	printf "\t     Free-Music In Terminal\n"
+	printf "\t\t1.Local Music\n"
+	printf "\t\t2.My Music List\n"
+	printf "\t\t3.Playing List\n"
+	printf "\t\t4.New List\n"
+	printf "\t\t5.Read Help\n"
+}
+
+find_disk_songs () {
+
+	find $SCAN_DIR \( -name "*.mp3" -o -name "*.MP3" \) -type f -print | grep -i mp3 > $LOCAL_MUSIC 
+}
+
+init_free_music () {
+
+	if [ ! -d $INSTALL_DIR ] ; then 
+		mkdir -p $INSTALL_DIR
+	fi
+	
+	if [ ! -d $LISTS ] ; then 
+		mkdir -p $LISTS
+	fi
+
+	if [ ! -f $LOCAL_MUSIC ] ; then 
+		echo "Finding local music..."
+		find_disk_songs
+	fi
+}
+
+check_and_set_play_list () {
+
+	ret=`echo $1 | grep -E [^0-9]`
+	if [ "" = "$ret" ] ; then 
+		PLAYING_LIST=$2
+		return 0
+	else
+		return 1
+	fi
+}
+
+start_play () {
+
+	stop_play
+	$PLAYER $PLAYING_LIST $1 > /dev/null 2>&1 & 
+}
+
+stop_play () {
+
+	#kill `ps -ax | grep free-music | awk '/-player/{print $1}'` > /dev/null 2>&1
+	#kill `ps -ax | grep -i mp3 | awk '/mpg123/{print $1}'` > /dev/null 2>&1
+	killall free-music-player.sh > /dev/null 2>&1
+	killall mpg123 > /dev/null 2>&1
+}
+
+activate_a_list () {
+	
+	clear
+	cat $1 | awk 'BEGIN{ line=0 ; printf ("Song_id\tSongs\n")} {line++ ; printf ("%s\t%s\n" , line , $0)}' | more
+	printf "Input command："
+	read cmd
+	case $cmd in
+		[1-9]* ) check_and_set_play_list $cmd $1 && start_play $cmd;;
+		* ) ;;
+	esac
+}
+
+get_music_name_by_num () {
+
+	IFS="
+	"
+	i=1
+	while read -r name ; do
+		if [ $i -lt $1 ] > /dev/null 2>&1 ; then
+			i=`expr $i + 1`
+			continue
+		fi
+		IFS=" "
+		echo $name
+		break
+	done < $LOCAL_MUSIC	
+}
+
+add_music_to_a_list () {
+
+	if [ ! -f "$1" ] ; then 
+		printf "Please created %s first.\n" "$1"
+		return 1
+	fi
+
+	printf "Please enter the songs id from Local Music.(eg:1 3 4)\n"
+	IFS="
+	"
+	read allnum
+	IFS=" "
+	for num in `echo $allnum` ; do
+		name=`get_music_name_by_num $num`
+		echo $name >> $1
+	done
+}
+
+new_list () {
+
+	printf "Please input the name of list："
+	read name
+	if [ "" = "$name" || "local-music" = "$name" ] ; then 
+		printf "Can't create it!\n"
+		return 1
+	fi
+
+	touch $LISTS/$name 
+	clear
+	printf "Local Music\n"
+	cat $LOCAL_MUSIC | awk 'BEGIN{ line=0 ; printf ("Song_id\tSongs\n")} {line++ ; printf ("%s\t%s\n" , line , $0)}' | more
+	add_music_to_a_list $LISTS/$name
+	return 0
+}
+
+my_list () {
+
+	i=1
+	printf "Song_id\tSongs\n"
+	mkdir -p $TMP_PATH
+	unset IFS
+	for list in `ls $LISTS` ; do
+		if [ "local-music" = "$list" ] ; then
+			continue
+		fi
+		printf "%s\t%s\n" "$i" "$list"
+		echo "$list" > "$TMP_PATH/$i"
+		i=`expr $i + 1`
+	done
+
+	if [ "1" = "$i" ]; then
+		printf "You didn't create any music list！"
+		printf "Any key to continue!"
+		read
+		return 1
+	fi
+
+	printf "Enter the list's id to enter list.："
+	read id
+	while [ ! -f "$TMP_PATH/$id" ]; do
+		printf "Error:id is null.\n"
+		printf "Enter the list's id to enter list.："
+		read id
+	done
+	list=`cat "$TMP_PATH/$id"`
+	activate_a_list $LISTS/$list
+	rm -rf $TMP_PATH
+}
+
+show_help() {
+
+	clear
+	printf "\tFree-Music In Terminal\n\n"
+	printf "<number>	Enter in submenu.(Main menu)\n"
+	printf "<s>		Stop play.(Main menu)\n"
+	printf "<n>		Play next.(Main menu)\n"
+	printf "<q>		Quit.(Main menu)\n"
+	printf "<number>	Select song to add/play.(Sub menu)\n\n"
+	
+	if [ -n "`ps ax | grep mpg123 | grep home `" ]; then
+		printf "Any Key to continue!"
+		read 	
+		return 0
+	else
+		exit 0
+	fi
+}
+
+get_main_opt () {
+
+	while [ 0 != "$QUIT_CODE" ] ; do
+		show_menu;
+		printf "\nInput command："
+		read cmd
+		case "$cmd" in
+			1 ) activate_a_list $LOCAL_MUSIC ;;
+			2 ) my_list;;
+			3 ) activate_a_list $PLAYING_LIST ;;
+			4 ) new_list;;
+			5 ) show_help ;;
+			#n ) kill `ps -ax | grep -i mp3 | awk '/mpg123/{print $1}'`;;
+			n ) killall mpg123 > /dev/null 2>&1;;
+			s ) stop_play;;
+			q ) QUIT_CODE=0 ; stop_play ;;
+			* ) show_help;;
+		esac
+	done
+}
+
+init_free_music
+get_main_opt
+
+clear
+exit 0
