@@ -11,7 +11,7 @@ LOCAL_MUSIC="$LISTS/local-music"
 QUIT_CODE=1
 SCAN_DIR=~
 PLAYING_LIST=$LOCAL_MUSIC
-PLAYER=./free-music-player.sh
+PLAYER=free-music-player.sh
 TMP_PATH=/tmp/free-music-terminal
 
 show_menu () {
